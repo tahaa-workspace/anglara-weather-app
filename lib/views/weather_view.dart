@@ -8,78 +8,101 @@ class WeatherView extends StatelessWidget {
   final WeatherController controller = Get.put(WeatherController());
   final TextEditingController searchController = TextEditingController();
 
+  void _searchCity() {
+    final city = searchController.text.trim();
+    if (city.isNotEmpty) {
+      controller.fetchWeather(city);
+      searchController.clear();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Weather Dashboard'),
+        title: const Text('Weather Dashboard'),
         actions: [
-          IconButton(
-            onPressed: () {
-              if (controller.weather.value != null) {
-                controller.fetchWeather(controller.weather.value!.cityName);
-              } else {
-                controller.fetchWeather('Ahmedabad');
-              }
-            },
-            icon: Icon(Icons.refresh),
+          Obx(
+            () => IconButton(
+              onPressed: controller.isRefreshing.value
+                  ? null
+                  : controller.refreshWeather,
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh',
+            ),
           ),
         ],
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             TextField(
               controller: searchController,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _searchCity(),
               decoration: InputDecoration(
                 labelText: 'Search City',
-                border: OutlineInputBorder(),
+                hintText: 'e.g. Vadodara',
+                border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  onPressed: () {
-                    if (searchController.text.isNotEmpty) {
-                      controller.fetchWeather(searchController.text.trim());
-                      searchController.clear();
-                    }
-                  },
-                  icon: Icon(Icons.search),
+                  onPressed: _searchCity,
+                  icon: const Icon(Icons.search),
                 ),
               ),
-              onSubmitted: (value) {
-                if (value.isNotEmpty) {
-                  controller.fetchWeather(value.trim());
-                  searchController.clear();
-                }
-              },
             ),
-            SizedBox(height: 30),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: controller.fetchCurrentLocationWeather,
+                icon: const Icon(Icons.my_location),
+                label: Obx(
+                  () => Text(
+                    controller.isGettingLocation.value
+                        ? 'Getting Location...'
+                        : 'Use Current Location',
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Expanded(
               child: Obx(() {
-                if (controller.isLoading.value) {
-                  return Center(child: CircularProgressIndicator());
+                final weather = controller.weather.value;
+
+                if (controller.isLoading.value && weather == null) {
+                  return const Center(child: CircularProgressIndicator());
                 }
-                if (controller.errorMessage.isNotEmpty) {
+
+                if (weather == null) {
                   return Center(
                     child: Text(
-                      controller.errorMessage.value,
-                      style: const TextStyle(color: Colors.red, fontSize: 16),
+                      controller.errorMessage.value.isEmpty
+                          ? 'Search for a city to view weather.'
+                          : controller.errorMessage.value,
                       textAlign: TextAlign.center,
                     ),
                   );
                 }
-                final weather = controller.weather.value;
-                if (weather == null) {
-                  return const Center(
-                    child: Text('Search for a city to view weather.'),
-                  );
-                }
+
                 return RefreshIndicator(
-                  onRefresh: () async {
-                    controller.fetchWeather(weather.cityName);
-                  },
+                  onRefresh: controller.refreshWeather,
                   child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     children: [
-                      SizedBox(height: 20),
+                      if (controller.errorMessage.value.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            controller.errorMessage.value,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      if (controller.isRefreshing.value)
+                        const LinearProgressIndicator(),
+                      const SizedBox(height: 20),
                       Text(
                         weather.cityName,
                         style: const TextStyle(
@@ -88,46 +111,50 @@ class WeatherView extends StatelessWidget {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      SizedBox(height: 20),
-                      Center(
-                        child: Text(
-                          '${weather.temperature}°C',
-                          style: const TextStyle(
-                            fontSize: 64,
-                            fontWeight: FontWeight.w300,
-                            color: Colors.blueAccent,
-                          ),
-                        ),
+                      const SizedBox(height: 16),
+                      Icon(
+                        weather.conditionIcon,
+                        size: 90,
+                        color: Colors.blueAccent,
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 8),
+                      Text(
+                        weather.condition,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        weather.temperature.toStringAsFixed(1) + '°C',
+                        style: const TextStyle(
+                          fontSize: 60,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.blueAccent,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
                       Card(
-                        elevation: 4,
-                        child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              ListTile(
-                                leading: const Icon(
-                                  Icons.air,
-                                  color: Colors.blue,
-                                ),
-                                title: const Text('Wind Speed'),
-                                trailing: Text(
-                                  "${weather.windSpeed} km/h",
-                                  style: TextStyle(fontSize: 16),
-                                ),
+                        elevation: 3,
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.air),
+                              title: const Text('Wind Speed'),
+                              trailing: Text(
+                                weather.windSpeed.toStringAsFixed(1) + ' km/h',
                               ),
-                              Divider(),
-                              ListTile(
-                                leading: Icon(Icons.code, color: Colors.blue),
-                                title: Text('Weather Condition Code'),
-                                trailing: Text(
-                                  "${weather.weatherCode}",
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                            const Divider(height: 1),
+                            ListTile(
+                              leading: const Icon(Icons.cloud),
+                              title: const Text('Weather Condition'),
+                              trailing: Text(weather.condition),
+                            ),
+                          ],
                         ),
                       ),
                     ],
