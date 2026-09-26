@@ -1,21 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:get/get.dart';
+import 'package:weather_app/views/weather_view.dart';
 
-class SplashView extends StatelessWidget {
+class SplashView extends StatefulWidget {
   const SplashView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    Future.delayed(const Duration(seconds: 2), () {
-      // Get.off(() => WeatherView());
-    });
+  State<SplashView> createState() => _SplashViewState();
+}
 
+class _SplashViewState extends State<SplashView> {
+  @override
+  void initState() {
+    super.initState();
+    _openWeatherScreen();
+  }
+
+  Future<void> _openWeatherScreen() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    Get.off(() => WeatherView());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blue,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wb_sunny_rounded, size: 100, color: Colors.white),
+          children: const [
+            Icon(
+              Icons.wb_sunny_rounded,
+              size: 100,
+              color: Colors.white,
+            ),
             SizedBox(height: 20),
             Text(
               'Anglara Weather App',
