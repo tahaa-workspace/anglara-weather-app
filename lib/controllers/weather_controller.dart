@@ -70,6 +70,7 @@ class WeatherController extends GetxController {
 
       weather.value = result;
     } catch (e) {
+      // print('LOCATION ERROR: $e');
       errorMessage.value = _getUserMessage(e);
     } finally {
       isGettingLocation.value = false;

@@ -128,7 +128,7 @@ class WeatherView extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        weather.temperature.toStringAsFixed(1) + '°C',
+                        '${weather.temperature.toStringAsFixed(1)}°C',
                         style: const TextStyle(
                           fontSize: 60,
                           fontWeight: FontWeight.w300,
@@ -145,7 +145,7 @@ class WeatherView extends StatelessWidget {
                               leading: const Icon(Icons.air),
                               title: const Text('Wind Speed'),
                               trailing: Text(
-                                weather.windSpeed.toStringAsFixed(1) + ' km/h',
+                                '${weather.windSpeed.toStringAsFixed(1)} km/h',
                               ),
                             ),
                             const Divider(height: 1),
